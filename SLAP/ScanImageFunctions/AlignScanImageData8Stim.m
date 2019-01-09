@@ -251,7 +251,7 @@ dataset.aligned = permute(dataset.aligned, [2 1 3 4 5]);
         C1 = reshape(R2(brightPixels(:),:,1),[],1); 
         C2 = reshape(R2(brightPixels(:),:,2),[],1);
         
-        f = figure('Name', 'draw lines corresponding to regions of minimum and maximum slope for linear unmixing');
+        f = figure('Name', 'CLOSE WINDOW if using yGluSnFR/JRGECO; otherwise draw lines corresponding to regions of minimum and maximum slope for linear unmixing;');
         scatter(C1,C2);
         hold on, 
         h1 = imline;
