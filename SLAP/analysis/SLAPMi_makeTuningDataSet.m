@@ -117,19 +117,21 @@ dataset.X(OutsideSLMSeeds,:,:) = nan;
 dataset.spikes(OutsideSLMSeeds,:,:) = nan;
 dataset.dPhotons(OutsideSLMSeeds,:,fnum) = nan;
 
-%get stimulus IDs
-dist = repmat(stimList(:,1), 1, length(dataset.stimTime)) - repmat(dataset.stimTime, size(stimList,1),1);
-distP = dist; distM = dist;
-distP(distP<0) = nan; distM(distM>0) = nan;
-mindistP = nanmin(distP, [], 1);
-mindistM = nanmax(distM,[],1);
-if nanvar(mindistM)<nanvar(mindistP)
-    dataset.stimulus.stimDelay = nanmedian(mindistM);
-    dataset.stimulus.delayVariance = nanvar(mindistM);
-else
-    dataset.stimulus.stimDelay = nanmedian(mindistP);
-    dataset.stimulus.delayVariance = nanvar(mindistP);
+%assuming that the clocks of the two computers are within 5 min of each other...
+candidates = find(abs(stimList(:,1)-dataset.stimTime(1))<0.004);
+V = nan(1,length(candidates));
+for c_ix = 1:length(candidates)
+    offset = stimList(candidates(c_ix),1)-dataset.stimTime(1);
+    Mo = stimList(:,1) - (dataset.stimTime+offset);
+    V(c_ix) = var(min(abs(Mo),[],1));
 end
+[minVal, bestCandidate] = min(conv(V, ones(1,8), 'valid'));
+if minVal>1e-9
+    keyboard %did not find the minimum properly
+end
+%so the best delay is...
+dataset.stimulus.stimDelay = stimList(candidates(bestCandidate),1)-dataset.stimTime(1);
+
 dataset.stimulus.stim = nan(length(fns),1);
 dataset.stimulus.timeError = nan(length(fns),1);
 dataset.stimulus.stimTime = nan(length(fns),1);

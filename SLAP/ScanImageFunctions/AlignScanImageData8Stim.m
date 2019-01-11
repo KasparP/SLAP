@@ -79,7 +79,7 @@ if ~nargin
         V(c_ix) = var(min(abs(Mo),[],1));
     end
     [minVal, bestCandidate] = min(conv(V, ones(1,8), 'valid'));
-    if minVal>1e-10
+    if minVal>1e-9
         keyboard %did not find the minimum properly
     end
     %so the best delay is...
