@@ -63,18 +63,28 @@ if ~nargin
         end
     end
     
-    dist = repmat(stimList(:,1), 1, length(dataset.stimTime)) - repmat(dataset.stimTime, size(stimList,1),1);
-    distP = dist; distM = dist;
-    distP(distP<0) = nan; distM(distM>0) = nan;
-    mindistP = nanmin(distP, [], 1);
-    mindistM = nanmax(distM,[],1);
-    if var(mindistM)<1e-13
-        dataset.stimulus.stimDelay = nanmedian(mindistM);
-        dataset.stimulus.delayVariance = nanvar(mindistM);
-    else
-        dataset.stimulus.stimDelay = nanmedian(mindistP);
-        dataset.stimulus.delayVariance = nanvar(mindistP);
+    %Identify stimulus identities
+    %dataset.stimtime is the start of the acquisition as recorded on the
+    %imaging computer
+    %stimList(:,1) is a list of all stimulus trigger times
+    
+    
+    %assuming that the clocks of the two computers are within 5 min of each
+    %other...
+    candidates = find(abs(stimList(:,1)-dataset.stimTime(1))<0.004);
+    V = nan(1,length(candidates));
+    for c_ix = 1:length(candidates)
+        offset = stimList(candidates(c_ix),1)-dataset.stimTime(1);
+        Mo = stimList(:,1) - (dataset.stimTime+offset);
+        V(c_ix) = var(min(abs(Mo),[],1));
     end
+    [minVal, bestCandidate] = min(conv(V, ones(1,8), 'valid'));
+    if minVal>1e-10
+        keyboard %did not find the minimum properly
+    end
+    %so the best delay is...
+    dataset.stimulus.stimDelay = stimList(candidates(bestCandidate),1)-dataset.stimTime(1);
+    
     dataset.stimulus.stim = nan(length(fns), 8);
     for fnum = 1:length(fns)
         [dataset.stimulus.timeError(fnum), minIx] = min(abs(dataset.stimTime(fnum) - stimList(:,1) + dataset.stimulus.stimDelay));
@@ -573,7 +583,7 @@ SI.rois = loadjson(strjoin(Mstring(i+1:end), '\n'));
 end
 
     function exitKP(src, evnt)
-        if strcmp(questdlg('Exit SLAPMiTuning?', 'SLAPMiTuning', 'Yes', 'No', 'No'), 'Yes')
+        if strcmp(questdlg('Exit SI Tuning?', 'SITuning', 'Yes', 'No', 'No'), 'Yes')
             delete(src);
         end
     end

@@ -63,12 +63,35 @@ if ~nargin
         end
     end
     
+    %Identify stimulus identities
+    %dataset.stimtime is the start of the acquisition as recorded on the
+    %imaging computer
+    %stimList(:,1) is a list of all stimulus trigger times
     dist = repmat(stimList(:,1), 1, length(dataset.stimTime)) - repmat(dataset.stimTime, size(stimList,1),1);
+    
+    %assuming that the clocks of the two computers are within 5 min of each
+    %other...
+    candidates = find(abs(stimList(:,1)-dataset.stimTime(1))<0.004);
+    V = nan(1,length(candidates));
+    for c_ix = 1:length(candidates)
+        offset = stimList(candidates(c_ix),1)-dataset.stimTime(1);
+        Mo = stimList(:,1) - (dataset.stimTime+offset);
+        V(c_ix) = var(min(abs(Mo),[],1));
+    end
+    [minVal, bestCandidate] = min(conv(V, ones(1,8), 'valid'));
+    if minVal>1e-10
+        keyboard %did not find the minimum properly
+    end
+    
+    %best delay
+    offset = stimList(candidates(bestCandidate),1)-dataset.stimTime(1);
+    dataset.stimulus.stimDelay = offset + median(
+    
     distP = dist; distM = dist;
     distP(distP<0) = nan; distM(distM>0) = nan;
     mindistP = nanmin(distP, [], 1);
     mindistM = nanmax(distM,[],1);
-    if var(mindistM)<1e-13
+    if var(mindistM)<1e-13 || var(mindistM)<var(mindistP)
         dataset.stimulus.stimDelay = nanmedian(mindistM);
         dataset.stimulus.delayVariance = nanvar(mindistM);
     else
@@ -78,13 +101,7 @@ if ~nargin
     dataset.stimulus.stim = nan(length(fns), 8);
     for fnum = 1:length(fns)
         [dataset.stimulus.timeError(fnum), minIx] = min(abs(dataset.stimTime(fnum) - stimList(:,1) + dataset.stimulus.stimDelay));
-        if minIx+7<size(stimList,1)
-            dataset.stimulus.stim(fnum, 1:8) = stimList(minIx:minIx+7,2);
-        else
-            nvalid = size(stimList,1)-
-            dataset.stimulus.stim(fnum, 1:8) = stimList(minIx:minIx+7,2);
-        end
-            
+        dataset.stimulus.stim(fnum, 1:8) = stimList(minIx:minIx+7,2);
         dataset.stimulus.stimTime(fnum, 1:8) = stimList(minIx:minIx+7,1);
         dataset.stimulus.stimTime(fnum, 1:8) = (86400.0 *(dataset.stimulus.stimTime(fnum, 1:8)- dataset.stimulus.stimTime(fnum, 1)));
         dataset.stimulus.stimTime(fnum, 1:8) = dataset.stimulus.stimTime(fnum, 1:8)+ (dataset.stimulus.stimTime(fnum, 2)); %assume (startDelay=Period) for stim timer
@@ -257,7 +274,7 @@ dataset.aligned = permute(dataset.aligned, [2 1 3 4 5]);
         C1 = reshape(R2(brightPixels(:),:,1),[],1); 
         C2 = reshape(R2(brightPixels(:),:,2),[],1);
         
-        f = figure('Name', 'draw lines corresponding to regions of minimum and maximum slope for linear unmixing');
+        f = figure('Name', 'CLOSE WINDOW if using yGluSnFR/JRGECO; otherwise draw lines corresponding to regions of minimum and maximum slope for linear unmixing;');
         scatter(C1,C2);
         hold on, 
         h1 = imline;
