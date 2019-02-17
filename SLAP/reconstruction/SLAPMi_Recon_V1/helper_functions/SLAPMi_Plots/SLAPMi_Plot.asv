@@ -148,7 +148,6 @@ switch opts.MovieType
         h_cb.Title.String = 'Z score  ';
     case 'dFF'
         h_cb.Title.String = '{\Delta}F/F_0 ';
-        
     otherwise
         keyboard
 end
