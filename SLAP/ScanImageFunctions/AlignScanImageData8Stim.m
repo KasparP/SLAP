@@ -71,7 +71,7 @@ if ~nargin
     
     %assuming that the clocks of the two computers are within 5 min of each
     %other...
-    candidates = find(abs(stimList(:,1)-dataset.stimTime(1))<0.004);
+    candidates = find(abs(stimList(:,1)-dataset.stimTime(1))<0.01);
     V = nan(1,length(candidates));
     for c_ix = 1:length(candidates)
         offset = stimList(candidates(c_ix),1)-dataset.stimTime(1);
@@ -87,9 +87,16 @@ if ~nargin
     
     dataset.stimulus.stim = nan(length(fns), 8);
     for fnum = 1:length(fns)
-        [dataset.stimulus.timeError(fnum), minIx] = min(abs(dataset.stimTime(fnum) - stimList(:,1) + dataset.stimulus.stimDelay));
-        dataset.stimulus.stim(fnum, 1:8) = stimList(minIx:minIx+7,2);
-        dataset.stimulus.stimTime(fnum, 1:8) = stimList(minIx:minIx+7,1);
+        %find the earlier sequence of 8 stimuli that starts very close to this time
+        [~, minix] = min(abs(stimList(:,1) -dataset.stimTime(fnum) - dataset.stimulus.stimDelay));
+        listIXs = max(1, minix-2):min(size(stimList,1), minix+9);
+        ss = diff(stimList(listIXs,1)); spacing = median(ss);
+        [~,ord] = min(conv(abs(ss-spacing), ones(1,7), 'valid'));
+        stimIx = listIXs(ord);
+        [dataset.stimulus.timeError(fnum), ~] = min(abs(dataset.stimTime(fnum) - stimList(:,1) + dataset.stimulus.stimDelay));
+        
+        dataset.stimulus.stim(fnum, 1:8) = stimList(stimIx:stimIx+7,2);
+        dataset.stimulus.stimTime(fnum, 1:8) = stimList(stimIx:stimIx+7,1);
         dataset.stimulus.stimTime(fnum, 1:8) = (86400.0 *(dataset.stimulus.stimTime(fnum, 1:8)- dataset.stimulus.stimTime(fnum, 1)));
         dataset.stimulus.stimTime(fnum, 1:8) = dataset.stimulus.stimTime(fnum, 1:8)+ (dataset.stimulus.stimTime(fnum, 2)); %assume (startDelay=Period) for stim timer
     end
@@ -236,11 +243,11 @@ dataset.aligned = permute(dataset.aligned, [2 1 3 4 5]);
     
     %average image
     nChan = size(dataset.aligned,5);
-    avgIMG = squeeze(trimmean(reshape(dataset.aligned,size(dataset.aligned,1),size(dataset.aligned,2),[],nChan),30,3));
+    avgIMG = squeeze(trimmean(reshape(dataset.aligned,size(dataset.aligned,1),size(dataset.aligned,2),[],nChan),60,3));
     if opts.threshDense
-         baseline1= prctile(reshape(avgIMG(:,:,1),1,[]),20);
+         baseline1= prctile(reshape(avgIMG(:,:,1),1,[]),1);
     else
-        baseline1= median(reshape(avgIMG(:,:,1),1,[]));
+        baseline1= prctile(reshape(avgIMG(:,:,1),1,[]), 20);
     end
     avgIMG(:,:,1) = avgIMG(:,:,1)-baseline1;
     if nChan==2
@@ -261,30 +268,30 @@ dataset.aligned = permute(dataset.aligned, [2 1 3 4 5]);
         C1 = reshape(R2(brightPixels(:),:,1),[],1); 
         C2 = reshape(R2(brightPixels(:),:,2),[],1);
         
-        f = figure('Name', 'CLOSE WINDOW if using yGluSnFR/JRGECO; otherwise draw lines corresponding to regions of minimum and maximum slope for linear unmixing;');
-        scatter(C1,C2);
-        hold on, 
-        h1 = imline;
-        h2 = imline;
-        input('Hit Enter when ready to proceed>>')
-        try
-            pts1 = diff(h1.getPosition,[],1);
-            pts2 = diff(h2.getPosition,[],1);
-            if abs(pts2(2)./pts2(1))<abs(pts1(2)./pts1(1))
-                keyboard
-            end
-            if prod(pts2)<0
-                pts2 = [0 1];
-            end
-            if prod(pts1)<0
-                pts1 = [1 0];
-            end
-            MM = [pts1./sum(pts1); pts2./sum(pts2)]; %mixing matrix
-        catch
+%         f = figure('Name', 'CLOSE WINDOW if using yGluSnFR/JRGECO; otherwise draw lines corresponding to regions of minimum and maximum slope for linear unmixing;');
+%         scatter(C1,C2);
+%         hold on, 
+%         h1 = imline;
+%         h2 = imline;
+%         input('Hit Enter when ready to proceed>>')
+%         try
+%             pts1 = diff(h1.getPosition,[],1);
+%             pts2 = diff(h2.getPosition,[],1);
+%             if abs(pts2(2)./pts2(1))<abs(pts1(2)./pts1(1))
+%                 keyboard
+%             end
+%             if prod(pts2)<0
+%                 pts2 = [0 1];
+%             end
+%             if prod(pts1)<0
+%                 pts1 = [1 0];
+%             end
+%             MM = [pts1./sum(pts1); pts2./sum(pts2)]; %mixing matrix
+%         catch
            % MM = [0.9166 0.0834 ; 0 1];
             MM = [0.9310    0.0690 ; 0.0578    0.9422]; %mixing matrix for RGECO/yGluSnFR
-            keyboard
-        end
+%             keyboard
+%         end
         %do unmixing
         avgUnmixed = reshape(reshape(avgIMG,[],2)/MM, size(avgIMG));
         responses = reshape(reshape(responses,[],2)/MM, size(responses));
@@ -296,20 +303,25 @@ dataset.aligned = permute(dataset.aligned, [2 1 3 4 5]);
 
     %show average responses to each stimulus
     prePeriod = 1:5;
+    
     stimResp = nan(size(responses,1),size(responses,2),size(responses,3),8, size(responses,6));
     stimRespNotAveraged = nan(size(responses));
     stimRespSmooth = stimResp;
     for stim = 1:8
         stimRespNotAveraged(:,:,:,:,stim,:) = responses(:,:,:,:,stim,:) - repmat(nanmean(responses(:,:,prePeriod,:,stim,:),3), 1,1,size(responses,3));
         stimResp(:,:,:,stim,:) = nanmean(stimRespNotAveraged(:,:,:,:,stim,:),4);
-        %stimRespDFF(:,:,:,stim,:) = stimResp(:,:,:,stim,:)./squeeze(nanmean(repmat(nanmean(responses(:,:,prePeriod,:,stim,:),3), 1,1,size(responses,3)),4));
-        stimRespSmooth(:,:,:,stim,:) = imgaussfilt(stimResp(:,:,:,stim,:),1);
     end
-
-    stimWindow = 7:13;
-    %stimWindow = 6:13; %for new datasets
-    disp(['Tuning is being calculated by averaging frames :' int2str(stimWindow)])
     
+    %Subtract any general bleed-through/contamination of stimuli and plot
+    P = reshape(stimResp, [size(stimResp,1)*size(stimResp,2) size(stimResp,3)*size(stimResp,4) size(stimResp,5)]);
+    for ch = size(avgIMG,3):-1:1
+        bleed(:,ch) =  median(P(avgIMG(:,:,ch)<2,:,ch),1);
+    end
+    stimResp = stimResp - reshape(bleed, 1,1,  size(stimResp,3), size(stimResp,4), size(stimResp,5));
+    stimRespSmooth = imgaussfilt(stimResp,0.5);
+
+    stimWindow = 6:13; %for new datasets
+    disp(['Tuning is being calculated by averaging frames :' int2str(stimWindow)])
     
     for ch = size(stimResp,5):-1:1
         %HSV data
