@@ -163,12 +163,12 @@ for ix = 1:numFiles
     sys = rmfield(sys,{'Lp','Lp2','Ln','Ln2','Gp','penalty'});
     recon_conditions(sys); %save the reconstruction
     
-    if (isfield(opts,'plot') && opts.plot) || (~isfield(opts,'plot') && ix<=8)
+    if (isfield(opts,'plot') && opts.plot) % || (~isfield(opts,'plot') && ix<=8)
         try
             close(hF);
         end
         opts.appendName = AppendName(sys);
-        opts.MovieType = 'dPhotons';
+        opts.MovieType = 'min(dFF,Z)';
         opts.t0 = 508;
         opts.t_end =  1600;
         hF = SLAPMi_Plot(sys,opts);

@@ -203,10 +203,10 @@ P.P = spdiags(yB,0,length(yB),length(yB))*P.P;
 hFig = figure('Name', ['dX: ' num2str(dX) ' dY:' num2str(dY) ' dZ: ' num2str(dZ) ' px; SBR~=' num2str(SBRest,3) ' ' scandata.metadata.galvoDataFileName]);
 subplot(2,1,1)
 plot(y./nanmean(y)); hold on, plot(yE(:,bestZ)./nanmean(yE(:,bestZ)))
-legend({'BEFORE align', 'EXPECTED'}); xlabel('Actual vs expected projection before DTW');
+legend({'BEFORE align', 'EXPECTED'}); xlabel('Actual vs expected projection before alignment');
 subplot(2,1,2)
 plot(y2./nanmean(y2)); hold on, plot(y2_E./mean(y2_E))
-legend({'AFTER align', 'EXPECTED'}); xlabel('Actual vs expected projection after DTW')
+legend({'AFTER align', 'EXPECTED'}); xlabel('Actual vs expected projection after alignment')
 drawnow
 
 %cut down P and S
