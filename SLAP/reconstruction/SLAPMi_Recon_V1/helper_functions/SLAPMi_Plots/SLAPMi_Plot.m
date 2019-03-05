@@ -17,7 +17,7 @@ end
 hF = [];
 opts.skipFrames = 5;  tooltips.skipFrames = 'Draw every Nth frame';
 opts.appendname = ''; tooltips.appendname = 'Append this to the movie filename. If empty, solver params will be appended';
-opts.MovieType = {'''dPhotons'''; '''dFF'''; '''Zscore'''; '''min(dFF,Z)'''};
+opts.MovieType = {'''min(dFF,Z)'''; '''dPhotons'''; '''dFF'''; '''Zscore'''};
 opts.t0 = 1016; tooltips.t0 = 'Frame # corresponding to stimulus onset';
 opts.t_end =  3200;   tooltips.t_end = 'optional; Last frame of visual motion stimulus';
 
@@ -101,7 +101,15 @@ switch opts.MovieType
 %        dffMax = max(mDFF(:));
         dffMax = round(2*max(3.5,prctile(mDFF(:), 99.8)))/2;
     case 'min(dFF,Z)'
-        keyboard
+        [mRaw1,mDFF1,valid2D1] = calc_Movies(sys,drawframes,[],StimOnset);
+        dffMax = 1.8; %round(2*max(1, min(5, prctile(mDFF1(:), 99.5))))/2;
+        
+        [mRaw2,mDFF2,valid2D2] = calc_Zscore(sys,drawframes,[],StimOnset);
+        ZMax = 3; %round(2*max(2,prctile(mDFF2(:), 99.8)))/2;
+        
+        mRaw = min(mRaw1, mRaw2.*(dffMax./ZMax));
+        mDFF = min(mDFF1, mDFF2.*(dffMax./ZMax));
+        valid2D = valid2D1 & valid2D2;
     otherwise
         keyboard
 end
@@ -148,7 +156,8 @@ switch opts.MovieType
         h_cb.Title.String = 'Z score  ';
     case 'dFF'
         h_cb.Title.String = '{\Delta}F/F_0 ';
-        
+    case 'min(dFF,Z)'
+        h_cb.Title.String = '{\Delta}F/F_0 ';
     otherwise
         keyboard
 end
