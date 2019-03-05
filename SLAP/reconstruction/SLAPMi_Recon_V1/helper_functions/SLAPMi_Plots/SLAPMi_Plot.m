@@ -102,10 +102,10 @@ switch opts.MovieType
         dffMax = round(2*max(3.5,prctile(mDFF(:), 99.8)))/2;
     case 'min(dFF,Z)'
         [mRaw1,mDFF1,valid2D1] = calc_Movies(sys,drawframes,[],StimOnset);
-        dffMax = 1.8; %round(2*max(1, min(5, prctile(mDFF1(:), 99.5))))/2;
+        dffMax = round(2*max(1, min(5, prctile(mDFF1(:), 99.5))))/2  %1.5
         
         [mRaw2,mDFF2,valid2D2] = calc_Zscore(sys,drawframes,[],StimOnset);
-        ZMax = 3; %round(2*max(2,prctile(mDFF2(:), 99.8)))/2;
+        ZMax = round(2*max(2,prctile(mDFF2(:), 99.8)))/2; %3
         
         mRaw = min(mRaw1, mRaw2.*(dffMax./ZMax));
         mDFF = min(mDFF1, mDFF2.*(dffMax./ZMax));
