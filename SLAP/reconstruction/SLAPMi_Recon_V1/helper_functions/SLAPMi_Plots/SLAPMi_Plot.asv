@@ -17,8 +17,10 @@ end
 hF = [];
 opts.skipFrames = 5;  tooltips.skipFrames = 'Draw every Nth frame';
 opts.appendname = ''; tooltips.appendname = 'Append this to the movie filename. If empty, solver params will be appended';
-opts.t0 = 1016; tooltips.t0 = 'optional; Frame # corresponding to stimulus onset';
+opts.MovieType = {'''min(dFF,Z)'''; '''dPhotons'''; '''dFF'''; '''Zscore'''};
+opts.t0 = 1016; tooltips.t0 = 'Frame # corresponding to stimulus onset';
 opts.t_end =  3200;   tooltips.t_end = 'optional; Last frame of visual motion stimulus';
+opts.stimTime = fales; tooltips.stimTime = 'Show Stimulus Phase; this is hardcoded for the original datasets';
 
 if nargin>1 %UPDATE WITH USER-SPECIFIED OPTIONS
     if ischar(optsin)
@@ -31,8 +33,6 @@ if nargin>1 %UPDATE WITH USER-SPECIFIED OPTIONS
 else
       opts = optionsGUI(opts, tooltips);
 end
-
-opts.MovieType = 'min(dFF,Z)'; %opts.MovieType = {'''min(dFF,Z)'''; '''dPhotons'''; '''dFF'''; '''Zscore'''};
 
 if ~nargin ||   isempty(sys)
     [fns, dr] = uigetfile('*.mat', 'Select you saved RECON files for plotting', 'multiselect', 'on');
@@ -68,7 +68,7 @@ subplot(2,2,[1 2]);
 
 plot(sys.output.F(:, 1:end-20)');
 
-title('Delta F/F for each segment');
+title('Total Seed Intensities');
 subplot(2,2,3);
 plot(sys.control_params.objective);
 title('Objective function'); xlabel('Iteration')
@@ -91,6 +91,8 @@ switch opts.MovieType
         dffMax = round(2*max(1, min(5, prctile(mDFF(:), 99.5))))/2;
     case 'dPhotons'
         [mRaw,mDFF,valid2D] = calc_dPhotons(sys,drawframes,[],StimOnset);
+%         dffMax = prctile(mDFF(:), 99.5);
+%        dffMax = max(mDFF(:));
         dffMax = max(5,prctile(mDFF(:), 99.9));
     case 'Zscore'
         [mRaw,mDFF,valid2D] = calc_Zscore(sys,drawframes,[],StimOnset);
@@ -109,6 +111,8 @@ switch opts.MovieType
         keyboard
 end
 
+% dff_threshold = 0.01;
+% dffMax = min(5, prctile(mDFF(mDFF>dff_threshold), 99));
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Gamma correction to better see dim features
 factor = sqrt(prctile(mRaw(:), 99.9));

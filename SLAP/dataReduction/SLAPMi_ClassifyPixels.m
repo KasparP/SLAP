@@ -21,7 +21,11 @@ load([dr fn]);
 %ilastikPath = 'C:\Program Files\ilastik-1.2.0rc10\';
 ilastikPath = 'C:\Program Files\ilastik-1.2.2rc10';
 if ~(exist(ilastikPath, 'dir'))
-   ilastikPath = uigetdir('./', 'Select your Ilastik install directory'); 
+    ilastikPath = 'C:\Program Files\ilastik-1.2.2post2';
+    if ~(exist(ilastikPath, 'dir'))
+        disp('Ilastik Install not found. Manually selecting your Ilastik install directory...');
+        ilastikPath = uigetdir('./', 'Ilastik Install not found. Manually select your Ilastik install directory'); 
+    end
 end
 projectDr = 'E:\SLAPmidata\Ilastik\';
 [projectFn, projectDr] = uigetfile([projectDr '*.ilp'], 'Select an ilastik project or classifier output');

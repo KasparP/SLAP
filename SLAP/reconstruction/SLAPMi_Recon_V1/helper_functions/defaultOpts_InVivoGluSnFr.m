@@ -11,5 +11,5 @@ opts.offFocusSpikes = true;     %Global spikes outside the focal plane; set to t
 opts.baselineMult = 1;          %Multiplier for the calculated baseline, typically 0.5-1; set to 1 if alignment is good, lower if alignment is poor
 opts.correctBleaching = true;   %fit a rank-1 temporally varying baseline to capture global bleaching
 opts.threshold_spikes = true;   %set small spikes to 0
-opts.clipDFF = 3.5;               %maximum DFF, set to Inf to not clip
+opts.clipDFF = 3;               %maximum DFF, set to Inf to not clip
 end
